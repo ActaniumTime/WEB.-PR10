@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    {{> title}}
+    <link rel="stylesheet" href="node_modules/bootstrap/dist/css/bootstrap.css">
+    <style>
+        form{
+            margin-left: 45%;
+            width: 100%;
+        }
+        table{
+            margin-left: 37%;
+        }
+        h2{
+            text-align: center;
+        }
+        td,
+        th {
+            padding: 5px;
+            min-width: 90px;
+            max-width: 200px;
+            text-align: start;
+        }
+
+        .btn {
+            padding: 4px;
+            border: 1px solid #333;
+            background-color: #eee;
+            border-radius: 2px;
+            margin: 5px;
+            cursor: pointer;
+        }
+        footer{
+            margin-left: 45%;
+        }
+
+    </style>
+</head>
+
+<body>
+    {{>formtitle}}
+    <form name="animalForm">
+        <input type="hidden" name="id" value="0" />
+        <p>
+            <label>Прiзвисько :</label><br>
+            <input name="name" />
+        </p>
+        <p>
+            <label>Вiк :</label><br>
+            <input name="age" type="number" />
+        </p>
+            <label>Вид :</label><br>
+            <input name="type"/>
+        </p>
+            <label>Стан здоров`я :</label><br>
+            <input name="health"/>
+        </p>
+            <label>Вага :</label><br>
+            <input name="weight" type="number" />
+        </p>
+        <p>
+            <button id="submitBtn" type="submit">Зберегти</button>
+            <button id="resetBtn">Скинути</button>
+        </p>
+    </form>
+    <table>
+        <thead>
+            <tr>
+                {{>table}}
+                <th></th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+        {{>footer}}
+    <script>
+        const tbody = document.querySelector("tbody");
+
+        async function Getanimals() {
+
+            const response = await fetch("/api/animals", {
+                method: "GET",
+                headers: { "Accept": "application/json" }
+            });
+
+            if (response.ok === true) {
+
+                const animals = await response.json();
+                animals.forEach(animal => {
+
+                    tbody.append(row(animal));
+                });
+            }
+        }
+
+        async function Getanimal(id) {
+            const response = await fetch("/api/animals/" + id, {
+                method: "GET",
+                headers: { "Accept": "application/json" }
+            });
+            if (response.ok === true) {
+                const animal = await response.json();
+                const form = document.forms["animalForm"];
+                form.elements["id"].value = animal.id;
+                form.elements["name"].value = animal.name;
+                form.elements["age"].value = animal.age;
+                form.elements["type"].value = animal.type;
+                form.elements["health"].value = animal.health;
+                form.elements["weight"].value = animal.weight;
+                
+            }
+        }
+
+        async function Createanimal(animalName, animalAge, animalType, animalHealth, animalWeight) {
+            const response = await fetch("api/animals", {
+                method: "POST",
+                headers: { "Accept": "application/json", "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    name: animalName,
+                    age: parseInt(animalAge, 10),
+                    type: animalType,
+                    health: animalHealth,
+                    weight: parseInt(animalWeight, 5)
+                })
+            });
+            if (response.ok === true) {
+                const animal = await response.json();
+                reset();
+                tbody.append(row(animal));
+            }
+        }
+
+        async function Editanimal(animalId ,animalName, animalAge, animalType, animalHealth, animalWeight) {
+            const response = await fetch("api/animals", {
+                method: "PUT",
+                headers: { "Accept": "application/json", "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    id: animalId,
+                    name: animalName,
+                    age: parseInt(animalAge, 10),
+                    type: animalType,
+                    health: animalHealth,
+                    weight: parseInt(animalWeight, 5)
+                })
+            });
+            if (response.ok === true) {
+                const animal = await response.json();
+                reset();
+                document.querySelector(`tr[data-rowid="${animal.id}"]`).replaceWith(row(animal));
+            }
+        }
+
+        async function Deleteanimal(id) {
+            const response = await fetch("/api/animals/" + id, {
+                method: "DELETE",
+                headers: { "Accept": "application/json" }
+            });
+            if (response.ok === true) {
+                const animal = await response.json();
+                document.querySelector(`tr[data-rowid="${animal.id}"]`).remove();
+            }
+        }
+
+
+        function reset() {
+            const form = document.forms["animalForm"];
+            console.log(form);
+            form.reset();
+            form.elements["id"].value = 0;
+        }
+
+        function row(animal) {
+
+            const tr = document.createElement("tr");
+            tr.setAttribute("data-rowid", animal.id);
+
+            const idTd = document.createElement("td");
+            idTd.append(animal.id);
+            tr.append(idTd);
+
+            const nameTd = document.createElement("td");
+            nameTd.append(animal.name);
+            tr.append(nameTd);
+
+            const ageTd = document.createElement("td");
+            ageTd.append(animal.age);
+            tr.append(ageTd);
+
+            const typeTd = document.createElement("td");
+            typeTd.append(animal.type);
+            tr.append(typeTd);
+
+            const healthTd = document.createElement("td");
+            healthTd.append(animal.health);
+            tr.append(healthTd);
+
+            const weightTd = document.createElement("td");
+            weightTd.append(animal.weight);
+            tr.append(weightTd);
+
+            const linksTd = document.createElement("td");
+
+            const editLink = document.createElement("a");
+            editLink.setAttribute("data-id", animal.id);
+            editLink.setAttribute("class", "btn");
+            editLink.append("Змiнити");
+            editLink.addEventListener("click", e => {
+                e.preventDefault();
+                Getanimal(animal.id);
+            });
+            linksTd.append(editLink);
+
+            const removeLink = document.createElement("a");
+            removeLink.setAttribute("data-id", animal.id);
+            removeLink.setAttribute("class", "btn");
+            removeLink.append("Видалити");
+            removeLink.addEventListener("click", e => {
+                e.preventDefault();
+                Deleteanimal(animal.id);
+            });
+
+            linksTd.append(removeLink);
+            tr.appendChild(linksTd);
+
+            return tr;
+        }
+
+        document.getElementById("resetBtn").addEventListener("click", e => {
+            e.preventDefault();
+            reset();
+        });
+
+
+        document.forms["animalForm"].addEventListener("submit", e => {
+            e.preventDefault();
+            const form = document.forms["animalForm"];
+            const id = form.elements["id"].value;
+            const name = form.elements["name"].value;
+            const age = form.elements["age"].value;
+            const type = form.elements["type"].value;
+            const health = form.elements["health"].value;
+            const weight = form.elements["weight"].value;
+            if (id == 0)
+                Createanimal(name, age, type, health, weight);
+            else
+                Editanimal(id, name, age, type, health, weight);
+        });
+
+
+        Getanimals();
+    </script>
+    <script src="node_modules/bootstrap/dist/js/bootstrap.bundle.js"> </script>
+</body>
+
+</html>
